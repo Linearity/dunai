@@ -17,8 +17,9 @@ import           Control.Arrow                                  as X
 import qualified Control.Category                               as Category
 import           Control.Monad                                  (mapM)
 import           Control.Monad.Random
+import           Control.Monad.Reader                           (reader)
 import           Control.Monad.Trans.Maybe
-import           Control.Monad.Trans.MSF                        hiding (link, switch)
+import           Control.Monad.Trans.MSF                        hiding (link, reader, switch)
 import qualified Control.Monad.Trans.MSF                        as MSF
 import           Control.Monad.Trans.MSF.Except                 as MSF hiding
                                                                         (link, switch)
@@ -624,3 +625,6 @@ replaceOnce a = dSwitch (arr $ const (a, Event ())) (const $ arr id)
 
 -- ** Tuples
 dup  x     = (x,x)
+
+arrTime :: Monad m => (DTime -> a -> b) -> SF m a b
+arrTime f = arrM (\a -> reader f >>= \fdt -> return (fdt a))
