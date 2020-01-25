@@ -529,7 +529,7 @@ integral :: (Monad m, VectorSpace a s) => SF m a a
 integral = integralFrom zeroVector
 
 integralFrom :: (Monad m, VectorSpace a s) => a -> SF m a a
-integralFrom a0 = proc a -> do
+integralFrom a0 = iPre a0 >>> proc a -> do
   dt <- constM ask         -< ()
   accumulateWith (^+^) a0 -< realToFrac dt *^ a
 
