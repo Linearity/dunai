@@ -564,6 +564,33 @@ accumHoldBy f b = feedback b $ arr $ \(a, b') ->
 loopPre :: Monad m => c -> SF m (a, c) (b, c) -> SF m a b
 loopPre = feedback
 
+-- * Integration and differentiation
+
+integral :: (Monad m, VectorSpace a s) => SF m a a
+integral = integralFrom zeroVector
+
+integralFrom :: (Monad m, VectorSpace a s) => a -> SF m a a
+integralFrom a0 = iPre a0 >>> proc a -> do
+  dt <- constM ask         -< ()
+  accumulateWith (^+^) a0 -< realToFrac dt *^ a
+
+derivative :: (Monad m, VectorSpace a s) => SF m a a
+derivative = derivativeFrom zeroVector
+
+derivativeFrom :: (Monad m, VectorSpace a s) => a -> SF m a a
+derivativeFrom a0 = proc a -> do
+  dt   <- constM ask   -< ()
+  aOld <- MSF.iPre a0 -< a
+  returnA             -< (a ^-^ aOld) ^/ realToFrac dt
+
+-- NOTE: BUG in this function, it needs two a's but we
+-- can only provide one
+iterFrom :: Monad m => (a -> a -> DTime -> b -> b) -> b -> SF m a b
+iterFrom f b = MSF $ \a -> do
+  dt <- ask
+  let b' = f a a dt b
+  return (b, iterFrom f b')
+
 -- * Noise (random signal) sources and stochastic event sources
 
 -- | Stochastic event source with events occurring on average once every tAvg
