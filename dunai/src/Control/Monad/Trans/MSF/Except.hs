@@ -290,6 +290,17 @@ dSwitch sf f = catchS ef f
            throwMaybe    -< me
            liftTransS sf -< a
 
+link :: Monad m =>
+        MSF m a (b, Maybe c) -> (c -> MSF m a (b, Maybe d))
+        -> MSF m a (b, Maybe d)
+link sf f = exceptS (handleExceptT (ef sf) (ef . f)) >>> arr pair
+  where
+    pair (Right b)  = (b, Nothing)
+    pair (Left c)   = (undefined, Just c)
+    ef sf           = proc a -> do
+                        (b,me)  <- liftTransS sf -< a
+                        inExceptT -< ExceptT $ return $ maybe (Right b) Left me
+
 -- | More general lifting combinator that enables recovery. Note that, unlike a
 -- polymorphic lifting function @forall a . m a -> m1 a@, this auxiliary
 -- function needs to be a bit more structured, and produces a Maybe value. The
