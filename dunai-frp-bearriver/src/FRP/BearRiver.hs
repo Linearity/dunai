@@ -503,6 +503,9 @@ hold a = feedback a $ arr $ \(e,a') ->
   where
     dup x = (x,x)
 
+trackAndHold :: Monad m => a -> SF m (Maybe a) a
+trackAndHold a_init = arr (maybe NoEvent Event) >>> hold a_init
+
 -- ** Accumulators
 
 -- | Accumulator parameterized by the accumulation function.
