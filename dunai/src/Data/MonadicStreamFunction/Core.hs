@@ -61,6 +61,7 @@ module Data.MonadicStreamFunction.Core
   , feedback
     -- * Simulation
   , reactimate
+  , vain
   , embed
   , module X
   )
@@ -74,13 +75,7 @@ import           Control.Monad.Base        (MonadBase, liftBase)
 import           Control.Monad.Trans.Class (MonadTrans, lift)
 import           Prelude                   hiding (id, sum, (.))
 
-#if !MIN_VERSION_base(4,8,0)
-import Control.Applicative (Applicative(..))
-#endif
-
--- Internal imports
-import Data.MonadicStreamFunction.InternalCore (MSF, embed, feedback, morphGS,
-                                                reactimate)
+import Data.MonadicStreamFunction.InternalCore (MSF, morphGS, feedback, reactimate, vain, embed)
 
 -- * Definitions
 
