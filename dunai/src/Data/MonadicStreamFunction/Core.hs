@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP        #-}
 {-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 -- We disable the following warning because this module purposefully defines
 -- orphan instances. This is a design decision in Dunai, so that we give
 -- implementors further flexibility while giving most users the features they
@@ -161,10 +162,10 @@ liftTransS = morphS lift
 --
 -- This is just a convenience function when you have a function to move across
 -- monads, because the signature of 'morphGS' is a bit complex.
-morphS :: (Monad m2, Monad m1)
-       => (forall c . m1 c -> m2 c)
-       -> MSF m1 a b
-       -> MSF m2 a b
+morphS :: forall m1 m2 a b . (Monad m2, Monad m1)
+      => (forall c . m1 c -> m2 c)
+      -> MSF m1 a b
+      -> MSF m2 a b
 morphS morph = morphGS morph'
   where
     -- The following makes the a's and the b's the same, and it just says:
@@ -180,5 +181,22 @@ morphS morph = morphGS morph'
     --         -> MSF m1 a1 b1
     --         -> MSF m2 a2 b2
     --
-    --  morph' :: (forall c . (a -> m1 (b, c)) -> (a -> m2 (b, c)))
-    morph' m1F = morph . m1F
+        -- morph' :: (a -> m1 (b, c)) -> (a -> m2 (b, c))
+        morph' m1F = morph . m1F
+
+-- IPerez: There is an alternative signature for liftMStreamPurer that also
+-- works, and makes the code simpler:
+--
+-- morphS :: Monad m => (m1 (b, MSF m1 a b) -> m (b, MSF m1 a b)) -> MSF m1 a b -> MSF m a b
+--
+-- Then we can express:
+--
+-- liftTransS = morphS lift
+-- liftBaseS  = morphS liftBase
+--
+-- We could also define a strict version of morphS as follows:
+--
+-- morphS'  f = morphS (f >=> whnfVal)
+--   where whnfVal p@(b,_) = b `seq` return p
+--
+-- and leave morphS as a lazy version (by default).
