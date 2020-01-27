@@ -653,14 +653,16 @@ reactimate senseI sense actuate sf = do
   where
     sfIO = morphS (return.runIdentity) (runReaderS sf)
 
-    -- Sense
-    senseSF = MSF.dSwitch senseFirst senseRest
+       -- Sense
+       senseSF     = MSF (const (do a0  <- senseI
+                                    return ((0, a0), senseRest a0)))
+       senseRest a = constM (sense True) >>> (arr id *** keepLast a)
 
-    -- Sense: First sample
-    senseFirst = constM senseI >>> arr (\x -> ((0, x), Just x))
+    -- -- Sense: First sample
+    -- senseFirst = constM senseI >>> arr (\x -> ((0, x), Just x))
 
-    -- Sense: Remaining samples
-    senseRest a = constM (sense True) >>> (arr id *** keepLast a)
+    -- -- Sense: Remaining samples
+    -- senseRest a = constM (sense True) >>> (arr id *** keepLast a)
 
     keepLast :: Monad m => a -> MSF m (Maybe a) a
     keepLast a = MSF $ \ma ->
