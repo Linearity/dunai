@@ -592,7 +592,8 @@ derivativeFrom :: (Monad m, VectorSpace a s) => a -> SF m a a
 derivativeFrom a0 = proc a -> do
   dt   <- constM ask   -< ()
   aOld <- MSF.iPre a0 -< a
-  returnA             -< (a ^-^ aOld) ^/ realToFrac dt
+  d    <- initially a0 -< (a ^-^ aOld) ^/ realToFrac dt
+  returnA -< d
 
 -- NOTE: BUG in this function, it needs two a's but we
 -- can only provide one
