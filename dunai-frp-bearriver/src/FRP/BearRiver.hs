@@ -1,6 +1,7 @@
 {-# LANGUAGE Arrows     #-}
 {-# LANGUAGE CPP        #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TupleSections #-}
 module FRP.BearRiver
   (module FRP.BearRiver, module X)
  where
@@ -80,6 +81,9 @@ instance Monad Event where
 
   Event x >>= f = f x
   NoEvent >>= _ = NoEvent
+
+liftTransSF :: (MonadTrans t, Monad m, Monad (t m)) => SF m a b -> SF (t m) a b
+liftTransSF sf = readerS (liftTransS (runReaderS sf))
 
 -- ** Reader layer
 readerSF :: Monad m => SF m (r, a) b -> SF (ReaderT r m) a b
@@ -215,6 +219,9 @@ never = constant NoEvent
 -- is given by the function argument.
 now :: Monad m => b -> SF m a (Event b)
 now b0 = Event b0 --> never
+
+nowM :: Monad m => m b -> SF m a (Event b)
+nowM m0 = never >>> replaceOnceM (fmap Event m0)
 
 after :: Monad m
       => Time -- ^ The time /q/ after which the event should be produced
@@ -624,12 +631,12 @@ occasionally tAvg b
 
 -- ** Reactimation
 
-reactimate :: Monad m => m a -> (Bool -> m (DTime, Maybe a)) -> (Bool -> b -> m Bool) -> SF Identity a b -> m ()
+reactimate :: Monad m => m a -> (Bool -> m (DTime, Maybe a)) -> (Bool -> b -> m Bool) -> SF m a b -> m ()
 reactimate senseI sense actuate sf = do
   -- runMaybeT $ MSF.reactimate $ liftMSFTrans (senseSF >>> sfIO) >>> actuateSF
   MSF.reactimateB $ senseSF >>> sfIO >>> actuateSF
   return ()
- where sfIO        = morphS (return.runIdentity) (runReaderS sf)
+ where sfIO        = {-morphS (return.runIdentity)-} (runReaderS sf)
 
        -- Sense
        senseSF     = MSF (const (do a0  <- senseI
@@ -683,6 +690,9 @@ evalFuture sf = flip (evalAt sf)
 -- ** Event handling
 replaceOnce :: Monad m => a -> SF m a a
 replaceOnce a = dSwitch (arr $ const (a, Event ())) (const $ arr id)
+
+replaceOnceM :: Monad m => m a -> SF m a a
+replaceOnceM m = dSwitch (liftTransS (constM ((, Event ()) <$> m))) (const $ arr id)
 
 -- ** Tuples
 dup  x     = (x,x)
