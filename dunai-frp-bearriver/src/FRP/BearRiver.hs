@@ -538,10 +538,9 @@ dpSwitchB sfs sfF sfCs = MSF $ \a -> do
   let bs   = fmap fst res
       sfs' = fmap snd res
   (e,sfF') <- unMSF sfF (a, bs)
-  let ct = case e of
-             Event c -> sfCs sfs' c
-             NoEvent -> dpSwitchB sfs' sfF' sfCs
-  return (bs, ct)
+  case e of
+    Event c -> local (const 0) (unMSF (sfCs sfs' c) a)
+    NoEvent -> return (bs, dpSwitchB sfs' sfF' sfCs)
 
 -- ** Parallel composition over collections
 
