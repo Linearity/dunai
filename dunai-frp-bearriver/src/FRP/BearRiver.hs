@@ -328,6 +328,18 @@ edgeFrom prev = MSF $ \a -> do
       ct  = edgeFrom a
   return (res, ct)
 
+{-
+A signal may be mostly constant but change from time to time. The signal
+|change| detects these changes in its input signal and produces a stream of
+corresponding events.
+-}
+change :: (Monad m, Eq a) => SF m a (Event a)
+change = MSF (\a -> return (NoEvent, changeFrom a))
+
+changeFrom prev = MSF (\a -> let    res | prev == a   = NoEvent
+                                        | otherwise   = Event a
+                                in return (res, changeFrom a))
+
 -- * Stateful event suppression
 
 -- | Suppression of initial (at local time 0) event.
@@ -726,3 +738,8 @@ delay q a0
                 | t0 < bdt      = return (a, wait rbuf buf t0 a)
                 | otherwise     = next rbuf buf' (t0 - bdt) ba
 
+embedSF :: Monad m => SF m a b -> [(DTime, a)] -> m [b]
+embedSF _  []           = return []
+embedSF sf ((dt,a):as)  = do    (b, sf')    <- runReaderT (unMSF sf a) dt
+                                bs          <- embedSF sf' as
+                                return (b:bs)
