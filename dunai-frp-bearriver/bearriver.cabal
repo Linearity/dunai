@@ -62,6 +62,10 @@ description:
   this implementation is faster than traditional Yampa for medium-sized and
   large applications.
 
+library
+  exposed-modules:     FRP.Yampa,
+                       FRP.BearRiver
+                       FRP.BearRiver.VectorSpace
 
 x-curation: uncurated
 
