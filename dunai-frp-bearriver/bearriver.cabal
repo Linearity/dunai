@@ -66,6 +66,7 @@ library
   exposed-modules:     FRP.Yampa,
                        FRP.BearRiver
                        FRP.BearRiver.VectorSpace
+                       FRP.BearRiver.Monad
 
 x-curation: uncurated
 
