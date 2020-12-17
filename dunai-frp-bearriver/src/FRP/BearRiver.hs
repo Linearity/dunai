@@ -270,7 +270,6 @@ afterEachCat = afterEachCat' 0
           ev = if null qxsNow then NoEvent else Event (map snd qxsNow)
       return (ev, afterEachCat' t' qxsLater)
 
-
 -- * Events
 
 -- | Apply an 'MSF' to every input. Freezes temporarily if the input is
