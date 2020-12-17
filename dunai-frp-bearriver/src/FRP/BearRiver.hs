@@ -98,6 +98,7 @@ runReaderSF_ r sf = runReaderS_ (morphS commuteReaderReader sf) r
 liftReaderSF :: Monad m => SF m a b -> SF (ReaderT r m) a b
 liftReaderSF sf = morphS commuteReaderReader (liftTransS sf)
 
+commuteReaderReader :: ReaderT r1 (ReaderT r2 m) a -> ReaderT r2 (ReaderT r1 m) a
 commuteReaderReader (ReaderT f)
     = ReaderT (\r1 -> ReaderT (\r2 -> runReaderT (f r2) r1))
 
@@ -117,9 +118,11 @@ runStateSF__ s sf = runStateS__ (morphS commuteStateReader sf) s
 liftStateSF :: Monad m => SF m a b -> SF (StateT s m) a b
 liftStateSF sf = morphS commuteReaderState (liftTransS sf)
 
+commuteReaderState :: StateT s (ReaderT r m) a -> ReaderT r (StateT s m) a
 commuteReaderState (StateT f)
     = ReaderT (\r -> StateT (\s -> runReaderT (f s) r))
 
+commuteStateReader :: ReaderT r (StateT s m) a -> StateT s (ReaderT r m) a
 commuteStateReader (ReaderT f)
     = StateT (\s -> ReaderT (\r -> runStateT (f r) s))
 
@@ -136,9 +139,11 @@ runWriterSF_ sf = runWriterSF sf >>> arr snd
 liftWriterSF :: (Monad m, Monoid w) => SF m a b -> SF (WriterT w m) a b
 liftWriterSF sf = morphS commuteReaderWriter (liftTransS sf)
 
+commuteReaderWriter :: WriterT w (ReaderT r m) a -> ReaderT r (WriterT w m) a
 commuteReaderWriter (WriterT m)
     = ReaderT (\r -> WriterT (runReaderT m r))
 
+commuteWriterReader :: ReaderT r (WriterT w m) a -> WriterT w (ReaderT r m) a
 commuteWriterReader (ReaderT f)
     = WriterT (ReaderT (\r -> runWriterT (f r)))
 
