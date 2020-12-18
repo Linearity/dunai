@@ -7,6 +7,12 @@ module FRP.BearRiver (module X) where
 -- switches, etc.) our goal is to show that the approach is promising and that
 -- there do not seem to exist any obvious limitations.
 
+import Data.MonadicStreamFunction as X hiding ( link,
+                                                reactimate,
+                                                repeatedly,
+                                                sum,
+                                                switch,
+                                                trace)
 import FRP.BearRiver.Basic        as X
 import FRP.BearRiver.Event        as X
 import FRP.BearRiver.EventSource  as X
