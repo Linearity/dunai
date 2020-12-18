@@ -36,12 +36,15 @@ module FRP.BearRiver.Basic
 
 -- External imports
 import qualified Control.Category as Category
+import Control.Monad.Trans.Reader
 
 -- Internal imports (dunai)
+import Data.MonadicStreamFunction.Instances.ArrowLoop
 import Data.MonadicStreamFunction.InternalCore (MSF (MSF, unMSF))
 
 -- Internal imports
 import FRP.BearRiver.InternalCore (SF, arr)
+import FRP.BearRiver.Event
 
 infixr 0 -->, -:>, >--, -=>, >=-
 
@@ -107,3 +110,23 @@ f >=- sf = MSF $ \a -> do
 -- | Override initial value of input signal.
 initially :: Monad m => a -> SF m a a
 initially = (--> identity)
+
+
+-- * Basic definitions
+
+type Time = Double
+
+type DTime = Double
+
+type SF m = MSF (ClockInfo m)
+
+type ClockInfo m = ReaderT DTime m
+
+-- ** Lifting
+arrPrim :: Monad m => (a -> b) -> SF m a b
+arrPrim = arr
+
+arrEPrim :: Monad m => (Event a -> b) -> SF m (Event a) b
+arrEPrim = arr
+
+dup  x     = (x,x)

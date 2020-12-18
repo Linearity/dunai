@@ -40,8 +40,12 @@ import Control.Monad.Trans.Writer.Strict
 import qualified Data.Bifunctor as BF
 import Data.MonadicStreamFunction
 import Data.Tuple
-import FRP.BearRiver
+import FRP.BearRiver.Basic
+import FRP.BearRiver.Event
+import FRP.BearRiver.EventSource
 import FRP.BearRiver.Monad
+import FRP.BearRiver.Switch
+import FRP.BearRiver.Time
 
 -- | A temporary phase of a signal function that returns a value when it is
 -- complete.
