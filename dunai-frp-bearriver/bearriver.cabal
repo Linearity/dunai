@@ -35,8 +35,19 @@ description:
 library
   exposed-modules:     FRP.Yampa,
                        FRP.BearRiver
-                       FRP.BearRiver.VectorSpace
+                       FRP.BearRiver.Basic
+                       FRP.BearRiver.Event
+                       FRP.BearRiver.EventSource
+                       FRP.BearRiver.Hybrid
+                       FRP.BearRiver.Integration
                        FRP.BearRiver.Monad
+                       FRP.BearRiver.Parallel
+                       FRP.BearRiver.Simulation
+                       FRP.BearRiver.Stateful
+                       FRP.BearRiver.Switch
+                       FRP.BearRiver.Task
+                       FRP.BearRiver.Time
+                       FRP.BearRiver.VectorSpace
 
   build-depends:       base >=4.6 && <5, transformers >=0.3, mtl, dunai >= 0.6.0 && < 0.8, MonadRandom, simple-affine-space
   hs-source-dirs:      src/

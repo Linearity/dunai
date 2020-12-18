@@ -15,7 +15,8 @@ module FRP.BearRiver.Monad
 
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.MSF
-import FRP.BearRiver
+import Data.MonadicStreamFunction
+import FRP.BearRiver.Basic
 
 -- * Monad transformations
 
