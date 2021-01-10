@@ -18,32 +18,18 @@ module FRP.BearRiver.Task (     Task (..),
                                 lastOut,
                                 mapTask,
                                 Voice (..),
-                                mix,
-                                BusTask,
-                                BusT,
-                                BusVoice (..),
-                                busMixM,
-                                busMix,
-                                bus,
-                                runBus,
-                                newBus,
-                                noBus   ) where
+                                BusVoice (..)   ) where
 
 import Control.Arrow
 import Control.Applicative
 import Control.Monad
 import Control.Monad.Fix
 import Control.Monad.Trans
-import Control.Monad.Trans.Reader
-import Control.Monad.Trans.State.Strict
-import Control.Monad.Trans.Writer.Strict
 import qualified Data.Bifunctor as BF
 import Data.MonadicStreamFunction
-import Data.Tuple
 import FRP.BearRiver.Basic
 import FRP.BearRiver.Event
 import FRP.BearRiver.EventSource
-import FRP.BearRiver.Monad
 import FRP.BearRiver.Switch
 import FRP.BearRiver.Time
 
@@ -175,7 +161,6 @@ branch sf sfL sfR = proc a -> do
                             Left b  -> sfL -< (a, b)
                             Right c -> sfR -< (a, c)
 
-
 -- * Tasks in parallel
 
 -- | Tasks that run in parallel with each other.
@@ -199,31 +184,15 @@ instance (Monad m, Monoid b) => Applicative (Voice a b m) where
                 race (Left _, k1)  (Right d, _)     = Right (Mitte (d, k1))
                 race (Right c, k1) (Right d, k2)    = Right (Rechts (c, d))
 
-data Threether a b c = Links a | Mitte b | Rechts c
-
--- | Run two tasks in parallel, combining their output signals with a monoidal
--- operator. When the shorter task is complete its output is the monoidal
--- identity until the longer task is complete. Then the mixed task returns both
--- tasks' return values.
-mix :: (MonadFix m, Monoid b) => Task a b m c -> Task a b m d -> Task a b m (c,d)
-mix m1 m2 = unVoice (liftA2 (,) (Voice m1) (Voice m2))
-
 -- * Communication between parallel tasks
-
--- | A task that reads from and writes to a bus via monadic actions.
-type BusTask c a b m = Task a b (BusT c m)
-
--- | A monad transformer that adds both a writer layer and then a reader layer.
--- Its purpose is to allow tasks to communicate on a bus via monadic actions.
-type BusT c m = ReaderT c (WriterT c m)
 
 -- | Tasks that run in parallel with each other and also communicate with each
 -- other via input and output signals connected to a bus.
-newtype BusVoice a b c m d = BusVoice { unBusVoice :: Task (a, c) (b, c) m d }
+newtype BusVoice a b c m d = BusVoice { unBusVoice :: Task (c, a) (c, b) m d }
     deriving (Functor, Monad)
 
 instance (MonadFix m, Monoid b, Monoid c) => Applicative (BusVoice a b c m) where
-    pure c  = BusVoice (pure c)
+    pure d  = BusVoice (pure d)
     liftA2 f (BusVoice (Task sf1)) (BusVoice (Task sf2))
             = BusVoice (do  t   <- Task sf
                             case t of   Links (c, r)    -> do   d   <- Task r
@@ -231,60 +200,17 @@ instance (MonadFix m, Monoid b, Monoid c) => Applicative (BusVoice a b c m) wher
                                         Mitte (d, r)    -> do   c   <- Task r
                                                                 return (f c d)
                                         Rechts (c, d)   -> return (f c d))
-        where   sf  = proc (a, c) -> do
+        where   sf  = proc (c, a) -> do
                         rec c1'             <- iPre mempty  -< c1
                             c2'             <- iPre mempty  -< c2
-                            (ebcd1, k1)     <- vain sf1     -< (a, c <> c2')
-                            (ebcd2, k2)     <- vain sf2     -< (a, c <> c1')
-                            let c1 = either snd (const mempty) ebcd1
-                                c2 = either snd (const mempty) ebcd2
+                            (ebcd1, k1)     <- vain sf1     -< (c <> c2', a)
+                            (ebcd2, k2)     <- vain sf2     -< (c <> c1', a)
+                            let c1 = either fst (const mempty) ebcd1
+                                c2 = either fst (const mempty) ebcd2
                         returnA -< case (ebcd1, ebcd2) of
-                                    (Left (b1, c1), Left (b2, c2))  -> Left (b1 <> b2, c1 <> c2)
+                                    (Left (c1, b1), Left (c2, b2))  -> Left (c1 <> c2, b1 <> b2)
                                     (Right c, Left _)               -> Right (Links (c, k2))
                                     (Left _, Right d)               -> Right (Mitte (d, k1))
                                     (Right c, Right d)              -> Right (Rechts (c, d))
 
--- | A variant of 'busMix' that mixes two tasks that communicate on a bus
--- via monadic actions.
-busMixM :: (MonadFix m, Monoid c, Monoid b) =>
-                Task a b (BusT c m) d
-                    -> Task a b (BusT c m) e
-                    -> Task a b (BusT c m) (d, e)
-busMixM m1 m2 = bus (mapTask busSwap
-                        (busMix (mapTask busSwap (runBus m1))
-                                (mapTask busSwap (runBus m2))))
-
--- | A variant of 'mix' that mixes two tasks that communicate on a bus via
--- extra input and output signals.
-busMix ::  (MonadFix m, Monoid b, Monoid c) =>
-                Task (a, c) (b, c) m d
-                    -> Task (a, c) (b, c) m e
-                    -> Task (a, c) (b, c) m (d, e)
-busMix m1 m2 = let BusVoice m = liftA2 (,) (BusVoice m1) (BusVoice m2) in m
-
--- | Transform a task that communicates on a bus via extra input and output
--- signals into a task that does so via monadic actions.
-bus :: (Monad m, Monoid c) => Task (c, a) (c, b) m d -> Task a b (BusT c m) d
-bus = mapTask (readerSF . writerSF . (>>> arr swizzle))
-    where   swizzle ewbd = either (second Left) (\d -> (mempty, Right d)) ewbd
-
--- | Transform a task that communicates on a bus via monadic actions into a
--- task that does so via extra input and output signals.
-runBus :: (Monad m, Monoid c) => Task a b (BusT c m) d -> Task (c, a) (c, b) m d
-runBus = mapTask ((>>> arr swizzle) . runWriterSF . runReaderSF)
-    where   swizzle (w, ebd) = BF.first (w,) ebd
-
--- | Transform a task that communicates on a bus via monadic actions into a
--- task that does not communicate on a bus.
-newBus :: (Monad m, Monoid c) => Task a b (BusT c m) d -> Task a b m d
-newBus = mapTask (runWriterSF_ . runReaderSF_ mempty)
-
--- | Transform any task into one that connect to a bus but does not read or
--- write to it.
-noBus :: (Monad m, Monoid c) => Task a b m d -> Task a b (BusT c m) d
-noBus = mapTask (liftSF . liftSF)
-
-busSwap :: Monad m =>
-            SF m (a1, a2) (Either (b1, b2) c)
-                -> SF m (a2, a1) (Either (b2, b1) c)
-busSwap sf = arr swap >>> sf >>> arr (BF.first swap)
+data Threether a b c = Links a | Mitte b | Rechts c
