@@ -18,7 +18,9 @@ module FRP.BearRiver.Task (     Task (..),
                                 lastOut,
                                 mapTask,
                                 Voice (..),
-                                BusVoice (..)   ) where
+                                BusVoice (..),
+                                Racer (..),
+                                race            ) where
 
 import Control.Arrow
 import Control.Applicative
@@ -183,6 +185,24 @@ instance (Monad m, Monoid b) => Applicative (Voice a b m) where
                 race (Right c, _) (Left _, k2)      = Right (Links (c, k2))
                 race (Left _, k1)  (Right d, _)     = Right (Mitte (d, k1))
                 race (Right c, k1) (Right d, k2)    = Right (Rechts (c, d))
+
+newtype Racer a b m c = Racer { unRacer :: Task a b m c }
+
+instance (Monad m, Monoid b) => Semigroup (Racer a b m c) where
+    (<>) = ((Racer . fmap (either id id) . unRacer) .) . race
+
+instance (Monad m, Monoid b) => Monoid (Racer a b m c) where
+    mempty = Racer (always (constant mempty))
+
+race :: (Monad m, Monoid b) => Racer a b m c -> Racer a b m d -> Racer a b m (Either c d)
+race (Racer (Task sf1)) (Racer (Task sf2))
+        = Racer (Task (proc a -> do
+                        b1   <- sf1     -< a
+                        b2   <- sf2     -< a
+                        returnA -< race b1 b2))
+    where   race (Left b1) (Left b2)    = Left (b1 <> b2)
+            race (Right c) _            = Right (Left c)
+            race _         (Right c)    = Right (Right c)
 
 -- * Communication between parallel tasks
 
