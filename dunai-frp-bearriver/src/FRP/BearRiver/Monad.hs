@@ -9,6 +9,7 @@ module FRP.BearRiver.Monad
         runStateSF,
         runStateSF_,
         execStateSF,
+        mapStateSF,
         writerSF,
         runWriterSF,
         runWriterSF_    ) where
@@ -77,6 +78,11 @@ runStateSF_ s sf = runStateS_ (morphS commuteStateReader sf) s
 -- input, from an 'SF' in the 'State' monad.
 execStateSF :: Monad m => s -> SF (StateT s m) a b -> SF m a b
 execStateSF s sf = runStateS__ (morphS commuteStateReader sf) s
+
+mapStateSF :: (Monad m, Monad n) =>
+                (SF m (s, a) (s, b) -> SF n (s, a) (s, b))
+                    -> SF (StateT s m) a b -> SF (StateT s n) a b
+mapStateSF f = stateSF . f . runStateSF
 
 -- | Transform an action in a monad transformer stack with a 'StateT' layer
 -- on top of a 'ReaderT' layer into one in another stack where the layers are
