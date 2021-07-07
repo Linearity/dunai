@@ -47,8 +47,8 @@ event :: a -> (b -> a) -> Event b -> a
 event _ f (Event x) = f x
 event x _ NoEvent   = x
 
-fromEvent (Event x) = x
-fromEvent _         = error "fromEvent NoEvent"
+fromOccurrence (Event x) = x
+fromOccurrence _         = error "fromOccurrence NoEvent"
 
 isEvent (Event _) = True
 isEvent _         = False
