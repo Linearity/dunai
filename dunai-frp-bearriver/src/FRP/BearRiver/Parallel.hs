@@ -12,12 +12,17 @@ import FRP.BearRiver.Event
 
 -- ** Parallel composition and switching over collections with broadcasting
 
-#if MIN_VERSION_base(4,8,0)
-parB :: (Monad m) => [SF m a b] -> SF m a [b]
-#else
-parB :: (Functor m, Monad m) => [SF m a b] -> SF m a [b]
-#endif
-parB = widthFirst . sequenceS
+-- #if MIN_VERSION_base(4,8,0)
+-- parB :: (Monad m) => [SF m a b] -> SF m a [b]
+-- #else
+-- parB :: (Functor m, Monad m) => [SF m a b] -> SF m a [b]
+-- #endif
+-- parB = widthFirst . sequenceS
+
+parB sfs = MSF (\a -> do    bks <- mapM (`unMSF` a) sfs
+                            let bs  = fmap fst bks
+                                ks  = fmap snd bks
+                            return (bs, parB ks))
 
 dpSwitchB :: (Monad m , Traversable col)
           => col (SF m a b) -> SF m (a, col b) (Event c) -> (col (SF m a b) -> c -> SF m a (col b))
