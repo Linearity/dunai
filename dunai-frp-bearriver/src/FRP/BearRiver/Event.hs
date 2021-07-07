@@ -153,9 +153,8 @@ event _ f (Event x) = f x
 event x _ NoEvent   = x
 
 -- | Extract the value from an event. Fails if there is no event.
-fromEvent :: Event a -> a
-fromEvent (Event x) = x
-fromEvent _         = error "fromEvent NoEvent"
+fromOccurrence (Event x) = x
+fromOccurrence _         = error "fromOccurrence NoEvent"
 
 -- | Tests whether the input represents an actual event.
 isEvent :: Event a -> Bool
