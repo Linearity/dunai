@@ -1,4 +1,12 @@
 {-# LANGUAGE Arrows #-}
+-- |
+-- Copyright  : (c) Ivan Perez and Manuel Baerenz, 2016
+-- License    : BSD3
+-- Maintainer : ivan.perez@keera.co.uk
+--
+-- An example of using a list monad in a game to represent that new game
+-- objects can be created and destroyed.
+module Main where
 
 import           Control.Applicative
 import           Control.Concurrent
@@ -108,6 +116,3 @@ runListMSF msf = runListMSF' [msf]
 -- Auxiliary Arrow functions
 voidI :: Arrow a => a () c -> a b c
 voidI =  (>>>) (arr (const ()))
-
-arr2 :: Arrow a => (b -> c -> d) -> a (b,c) d
-arr2 f = arr (uncurry f)
